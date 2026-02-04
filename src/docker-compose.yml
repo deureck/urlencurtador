@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16.11-alpine3.22
+    container_name: meu_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: meu_usuario
+      POSTGRES_PASSWORD: minha_senha_segura
+      POSTGRES_DB: meu_banco_de_dados
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data:Z
+
+volumes:
+  postgres_data:
