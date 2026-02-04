@@ -61,8 +61,9 @@ Este projeto é um encurtador de URLs que permite transformar URLs longas em lin
 ### 1. Clone o repositório
 
 ```bash
-git clone https://github.com/seu-usuario/urlencutador.git
-cd urlencutador
+git clone https://github.com/deureck/urlencurtador.git
+cd urlencurtador
+cd src
 ```
 
 ### 2. Inicie o banco de dados com Docker
@@ -209,19 +210,19 @@ O projeto possui **50 testes unitários** com **100% de taxa de sucesso**.
 ### Executar todos os testes
 
 ```bash
-dotnet test
+dotnet test --project ./Tests
 ```
 
 ### Executar testes com detalhes
 
 ```bash
-dotnet test --verbosity normal
+dotnet test --project ./Tests --verbosity normal
 ```
 
 ### Executar testes de uma classe específica
 
 ```bash
-dotnet test --filter "FullyQualifiedName~Base62ConverterTests"
+dotnet test --project ./Tests --filter "FullyQualifiedName~Base62ConverterTests"
 ```
 
 ### Cobertura de Testes
@@ -233,7 +234,11 @@ dotnet test --filter "FullyQualifiedName~Base62ConverterTests"
 ## 📁 Estrutura do Projeto
 
 ```
-urlencutador/
+Tests/
+├── Base62ConverterTests.cs   # Testes do conversor
+├── ServicesUrlTests.cs       # Testes dos serviços
+└── ControllerUrlTests.cs     # Testes do controller
+src/
 ├── controllers/
 │   └── ControllerUrl.cs          # Controller da API
 ├── services/
@@ -246,14 +251,10 @@ urlencutador/
 ├── infra/
 │   └── DBurl.cs                  # Contexto do EF Core
 ├── Migrations/                   # Migrações do banco
-├── Tests/
-│   ├── Base62ConverterTests.cs   # Testes do conversor
-│   ├── ServicesUrlTests.cs       # Testes dos serviços
-│   └── ControllerUrlTests.cs     # Testes do controller
 ├── Program.cs                    # Ponto de entrada
 ├── appsettings.json             # Configurações
 ├── docker-compose.yml           # Configuração Docker
-└── README.md                    # Este arquivo
+README.md                    # Este arquivo
 ```
 
 ## 🔍 Como Funciona
