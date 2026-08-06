@@ -1,8 +1,8 @@
 public interface IServices<T>
 {
-    Task Add(T model);
+    Task<T> Create(string url);
     Task<List<T>> List_All();
     Task Delete(long id);
-    Task Update(long id, T model);
-    Task<T> Get(long id);
+    Task Update(long id, string newUrl);
+    Task<T?> Get(string code);
 }

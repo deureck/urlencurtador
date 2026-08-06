@@ -1,67 +1,70 @@
 using Microsoft.EntityFrameworkCore;
+using System;
 
-public class ServicesUrl:IServices<modelurl>
+
+namespace urlencurtador.services;
+
+public class ServicesUrl : IServices<modelurl>
 {
     private readonly DBurl _contextDB;
     private const long IDOFFSET = 1000000;
-    public ServicesUrl(DBurl contextDB,Base62Converter base62Converter)
+    private Random rnd = new Random();
+    public ServicesUrl(DBurl contextDB)
     {
         _contextDB = contextDB;
     }
-
-    public modelurl Create_Model(string url)
-    { 
-        return new modelurl(url);
-    }
-
-
-    public async Task Add(modelurl model)
-    { 
+  
+    public async Task<modelurl> Create(string url)
+    {
+        string code = await GerationCode();
+        modelurl model = new modelurl(url, code);
         _contextDB.Set<modelurl>().Add(model);
         await _contextDB.SaveChangesAsync();
+        return model;
     }
 
-    public async Task<modelurl> Get(long id)
+
+    public async Task<modelurl?> Get(string code)
     {
-        return await _contextDB.Urls.FindAsync(id);
+        return await _contextDB.Urls.FirstOrDefaultAsync(u => u.Code == code);
     }
+
     public async Task<List<modelurl>> List_All()
     {
         return await _contextDB.Urls.ToListAsync();
     }
 
-    public string GetEncode62(long id)
+    private async Task<string> GerationCode()
     {
-        return Base62Converter.Encode(id + IDOFFSET); 
+        long random = rnd.NextInt64();
+        string code = Base62Converter.Encode(random + IDOFFSET);
+        if (!await _contextDB.Urls.AnyAsync(u => u.Code == code))
+        {
+            return code;
+        }
+
+        return await GerationCode();
     }
 
-    public async Task<string> SetEncode62(string base62) 
-    {
-      long id = Base62Converter.Decode(base62);
-      long idReal = id - IDOFFSET;
-      if (idReal <= 0) return null;
-      modelurl? model = await _contextDB.Urls.AsNoTracking().FirstOrDefaultAsync(x => x.Id == idReal);
-      
-      return model?.Url;
-    }
+
     public async Task Delete(long id)
     {
-       var url = await _contextDB.Urls.FindAsync(id);
-       if (url != null)
-       {
-        _contextDB.Urls.Remove(url);
-        await _contextDB.SaveChangesAsync();
-       }
-    }
-    public async Task Update(long id, modelurl model)
-    {
-        modelurl url = await _contextDB.Urls.FindAsync(id);
+        var url = await _contextDB.Urls.FindAsync(id);
         if (url != null)
         {
-            url.Url = model.Url;
+            _contextDB.Urls.Remove(url);
             await _contextDB.SaveChangesAsync();
         }
     }
-        
+    public async Task Update(long id, string newUrl)
+    {
+        modelurl? url = await _contextDB.Urls.FindAsync(id);
+        if (url != null)
+        {
+            url.Url = newUrl;
+            await _contextDB.SaveChangesAsync();
+        }
+    }
+
 
 }

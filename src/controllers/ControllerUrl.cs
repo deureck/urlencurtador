@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
+using urlencurtador.services;
 
 
 public record CreateInput(string url);
 
 [ApiController]
 [Route("/")]
-public class ControllerUrl:ControllerBase
+public class ControllerUrl : ControllerBase
 {
     private readonly ServicesUrl _services;
     public ControllerUrl(ServicesUrl services)
@@ -13,37 +14,31 @@ public class ControllerUrl:ControllerBase
         _services = services;
     }
     [HttpPost]
-    public async Task<IActionResult> CreateUrl([FromBody]CreateInput url)
+    public async Task<IActionResult> CreateUrl([FromBody] CreateInput url)
     {
-        
-        await _services.Add(_services.Create_Model(url.url));
-        return Created();
+        var newUrl = await _services.Create(url.url);
+        return Created("", newUrl);
     }
-    [HttpGet("/get/{id}")]
-    public async Task<IActionResult> GetUrlById(long id)
+    [HttpGet("/get/{code}")]
+    public async Task<IActionResult> GetUrlById(string code)
     {
-        var url = await _services.Get(id);
+        var url = await _services.Get(code);
         if (url == null)
         {
             return NotFound();
         }
-        return Ok(url);
+        return Ok(url.Url);
     }
-    [HttpGet("/createHash/{id}")]
-    public async Task<IActionResult> CreateHashById(long id)
+
+    [HttpGet("/{code}")]
+    public async Task<IActionResult> RedirectToUrl(string code)
     {
-        var hash = _services.GetEncode62(id);
-        return  Ok(new { hash });
-    }
-    [HttpGet("/{hash}")]
-    public async Task<IActionResult> RedirectToUrl(string hash)
-    {
-       string url = await _services.SetEncode62(hash);
-       if (url == null)
-       {
-           return NotFound();
-       }
-       return RedirectPermanent(url);
+        modelurl? url = await _services.Get(code);
+        if (url == null)
+        {
+            return NotFound();
+        }
+        return RedirectPermanent(url.Url);
     }
     [HttpGet("/list")]
     public async Task<IActionResult> GetAllUrls()
@@ -54,7 +49,7 @@ public class ControllerUrl:ControllerBase
     [HttpPut("/update/{id}")]
     public async Task<IActionResult> UpdateUrl(long id, [FromBody] CreateInput url)
     {
-        await _services.Update(id, new modelurl(url.url));
+        await _services.Update(id, url.url);
         return Ok();
     }
     [HttpDelete("/delete/{id}")]
@@ -64,5 +59,5 @@ public class ControllerUrl:ControllerBase
         return Ok();
     }
 
-    
+
 }

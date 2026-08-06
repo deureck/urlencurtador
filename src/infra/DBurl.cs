@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations.Schema;
-[Table("urls")]
+
 public class DBurl:DbContext
 {
 
@@ -11,3 +10,4 @@ public class DBurl:DbContext
     
     public DbSet<modelurl> Urls{get;set;}
 }
+

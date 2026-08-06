@@ -2,7 +2,9 @@
 using System;
 using System.Text;
 
-public class Base62Converter
+namespace urlencurtador.services;
+
+public static class Base62Converter
 {
     private const string Alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
@@ -22,10 +24,13 @@ public class Base62Converter
     // Converte de Base62 (string) para Base10 (long)
     public static long Decode(string base62)
     {
+        if (string.IsNullOrEmpty(base62)) return 0;
         long result = 0;
         foreach (char c in base62)
         {
-            result = result * 62 + Alphabet.IndexOf(c);
+            int index = Alphabet.IndexOf(c);
+            if (index == -1) continue;
+            result = result * 62 + index;
         }
         return result;
     }

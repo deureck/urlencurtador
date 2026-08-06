@@ -1,320 +1,368 @@
-# 🔗 URL Encurtador
+# 🔗 URL Encurtador API
 
-Um encurtador de URLs moderno e eficiente desenvolvido em ASP.NET Core 9.0 com PostgreSQL.
+[![NET](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?logo=docker)](https://www.docker.com/)
+[![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-Enabled-000000?logo=opentelemetry)](https://opentelemetry.io/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.md)
+
+Um serviço web moderno, de alta performance e resiliência para encurtamento de URLs, desenvolvido em **ASP.NET Core 9.0**, **PostgreSQL** e **Entity Framework Core**. Conta com algoritmo customizado de codificação **Base62**, suporte completo a **Docker / Docker Compose**, rastreamento distribuído via **OpenTelemetry** e suíte de testes unitários automatizados.
+
+---
 
 ## 📋 Índice
 
-- [Sobre o Projeto](#sobre-o-projeto)
-- [Tecnologias](#tecnologias)
-- [Funcionalidades](#funcionalidades)
-- [Pré-requisitos](#pré-requisitos)
-- [Instalação](#instalação)
-- [Configuração](#configuração)
-- [Uso](#uso)
-- [API Endpoints](#api-endpoints)
-- [Testes](#testes)
-- [Estrutura do Projeto](#estrutura-do-projeto)
-- [Como Funciona](#como-funciona)
-- [Contribuindo](#contribuindo)
+- [Sobre o Projeto](#-sobre-o-projeto)
+- [Tecnologias Utilizadas](#-tecnologias-utilizadas)
+- [Arquitetura & Como Funciona](#-arquitetura--como-funciona)
+- [Estrutura do Projeto](#-estrutura-do-projeto)
+- [Configuração (.env)](#-configuração-env)
+- [Como Executar](#-como-executar)
+  - [Opção 1: Via Docker Compose (Recomendado)](#opção-1-via-docker-compose-recomendado)
+  - [Opção 2: Execução Local (.NET CLI)](#opção-2-execução-local-net-cli)
+- [Documentação da API (Endpoints)](#-documentação-da-api-endpoints)
+- [Observabilidade](#-observabilidade)
+- [Testes Unitários](#-testes-unitários)
+- [Licença](#-licença)
+- [Autor](#-autor)
+
+---
 
 ## 🎯 Sobre o Projeto
 
-Este projeto é um encurtador de URLs que permite transformar URLs longas em links curtos e fáceis de compartilhar. Utiliza codificação Base62 para gerar hashes únicos e compactos.
+O **URL Encurtador** permite transformar links extensos em URLs curtas e de fácil compartilhamento. Cada link recebe um código único e compacto gerado por um algoritmo numérico baseado em **Base62**.
 
-### Características Principais
+### 🌟 Principais Recursos
 
-- ✅ Criação de URLs curtas
-- ✅ Redirecionamento permanente (301)
-- ✅ CRUD completo de URLs
-- ✅ Codificação Base62 para hashes compactos
-- ✅ Banco de dados PostgreSQL
-- ✅ Testes unitários completos (50 testes, 100% de sucesso)
-- ✅ Docker Compose para fácil deployment
-
-## 🚀 Tecnologias
-
-- **[.NET 9.0](https://dotnet.microsoft.com/)** - Framework principal
-- **[ASP.NET Core](https://docs.microsoft.com/aspnet/core)** - Web API
-- **[Entity Framework Core 9.0](https://docs.microsoft.com/ef/core)** - ORM
-- **[PostgreSQL 16](https://www.postgresql.org/)** - Banco de dados
-- **[Docker](https://www.docker.com/)** - Containerização
-- **[xUnit](https://xunit.net/)** - Framework de testes
-- **[FluentAssertions](https://fluentassertions.com/)** - Assertions para testes
-- **[Moq](https://github.com/moq/moq4)** - Mocking para testes
-
-## ⚡ Funcionalidades
-
-- **Encurtar URLs**: Converte URLs longas em links curtos
-- **Redirecionamento**: Redireciona automaticamente para a URL original
-- **Gerenciamento**: CRUD completo (Create, Read, Update, Delete)
-- **Hash Customizado**: Geração de hash Base62 a partir de IDs
-- **Listagem**: Visualize todas as URLs cadastradas
-
-## 📦 Pré-requisitos
-
-- [.NET 9.0 SDK](https://dotnet.microsoft.com/download)
-- [Docker](https://www.docker.com/get-started) e Docker Compose (opcional, para PostgreSQL)
-- PostgreSQL 16+ (se não usar Docker)
-
-## 🔧 Instalação
-
-### 1. Clone o repositório
-
-```bash
-git clone https://github.com/deureck/urlencurtador.git
-cd urlencurtador
-cd src
-```
-
-### 2. Inicie o banco de dados com Docker
-
-```bash
-docker-compose up -d
-```
-
-### 3. Execute as migrações
-
-```bash
-dotnet ef database update
-```
-
-### 4. Execute o projeto
-
-```bash
-dotnet run
-```
-
-A API estará disponível em `http://localhost:5018` (ou a porta configurada).
-
-## ⚙️ Configuração
-
-### Banco de Dados
-
-Edite o arquivo `appsettings.json` para configurar a conexão com o PostgreSQL:
-
-```json
-{
-  "ConnectionStrings": {
-    "Postgress": "Host=127.0.0.1;Username=meu_usuario;Password=minha_senha_segura;Database=meu_banco_de_dados;"
-  }
-}
-```
-
-### Docker Compose
-
-O arquivo `docker-compose.yml` já está configurado com:
-- PostgreSQL 16.11
-- Porta: 5432
-- Usuário: `meu_usuario`
-- Senha: `minha_senha_segura`
-- Database: `meu_banco_de_dados`
-
-## 💻 Uso
-
-### Exemplo Rápido
-
-1. **Criar uma URL curta**:
-```bash
-curl -X POST http://localhost:5018/ \
-  -H "Content-Type: application/json" \
-  -d '{"url": "https://www.exemplo.com.br/pagina-muito-longa"}'
-```
-
-2. **Obter o hash da URL** (usando o ID retornado):
-```bash
-curl http://localhost:5018/createHash/1
-# Retorna: {"hash":"4C93"}
-```
-
-3. **Acessar a URL curta**:
-```bash
-curl -L http://localhost:5018/4C93
-# Redireciona para: https://www.exemplo.com.br/pagina-muito-longa
-```
-
-## 📡 API Endpoints
-
-### Criar URL
-```http
-POST /
-Content-Type: application/json
-
-{
-  "url": "https://www.exemplo.com"
-}
-```
-**Resposta**: `201 Created`
+- ⚡ **Geração de Hash Base62 único**: Códigos curtos derivados de números aleatórios seguros com offset (`1.000.000`) para evitar adivinhação sequencial.
+- 🔁 **Redirecionamento HTTP 301**: Redirecionamento permanente (`Moved Permanently`) otimizado para SEO e navegação transparente.
+- 🛠️ **CRUD Completo de URLs**: Criação, busca por código, redirecionamento, listagem de todas as URLs, atualização e deleção.
+- 🐳 **Pronto para Produção com Docker**: Build multi-stage otimizado no `Dockerfile` e orquestração simplificada com `docker-compose.yml`.
+- 📊 **Observabilidade Nativa**: Rastreamento distribuído via **OpenTelemetry (OTLP)**.
+- 🧪 **Testes Unitários**: Testes automatizados cobrindo Controllers, Services e o conversor Base62.
+- 🔄 **Auto Migration**: Aplicação automática de migrações do EF Core na inicialização do servidor.
 
 ---
 
-### Obter URL por ID
-```http
-GET /get/{id}
-```
-**Resposta**: `200 OK` com objeto URL ou `404 Not Found`
+## 🚀 Tecnologias Utilizadas
+
+- **Linguagem & Framework**: C# / .NET 9.0 (ASP.NET Core Web API)
+- **Persistência de Dados**: Entity Framework Core 9.0 + PostgreSQL (`Npgsql.EntityFrameworkCore.PostgreSQL`)
+- **Documentação de API**: OpenAPI (`Microsoft.AspNetCore.OpenApi`)
+- **Observabilidade**: OpenTelemetry (`OpenTelemetry.Extensions.Hosting`, `Instrumentation.AspNetCore`, `Exporter.OpenTelemetryProtocol`)
+- **Containerização**: Docker & Docker Compose
+- **Testes Unitários**: xUnit, Moq, FluentAssertions, EntityFrameworkCore.InMemory
 
 ---
 
-### Gerar Hash para ID
-```http
-GET /createHash/{id}
+## 🧠 Arquitetura & Como Funciona
+
+### 1. Codificação Base62
+
+O algoritmo converte valores numéricos inteiros para uma representação textual no alfabeto de 62 caracteres legíveis `[0-9A-Za-z]`:
+
+$$\text{Alfabeto} = \text{"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"}$$
+
+### 2. Fluxo de Geração de Código
+
+1. O cliente faz uma requisição `POST /` enviando a URL original no body.
+2. A aplicação gera um número aleatório de 64 bits (`Random.NextInt64()`) e adiciona o deslocamento base (`IDOFFSET = 1.000.000`).
+3. O valor resultante é convertido para Base62 (ex: `4C93`).
+4. O sistema garante a unicidade do código no banco de dados PostgreSQL.
+5. O registro é persistido com a URL original e o código encurtado.
+
+### 3. Fluxo de Redirecionamento
+
 ```
-**Resposta**: 
-```json
-{
-  "hash": "4C93"
-}
+Cliente ───────> GET /{code} ───────> ControllerUrl ───────> ServicesUrl ───────> DB (PostgreSQL)
+                                                                                       │
+                                      ┌────────────────────────────────────────────────┘
+                                      ▼
+                             ┌─────────────────┐
+                             │ Código Existe?  │
+                             └────────┬────────┘
+                                      │
+                         ┌────────────┴────────────┐
+                         ▼                         ▼
+                   [Sim] 301 Redirect         [Não] 404 Not Found
 ```
 
 ---
-
-### Redirecionar para URL Original
-```http
-GET /{hash}
-```
-**Resposta**: `301 Redirect` para URL original ou `404 Not Found`
-
----
-
-### Listar Todas as URLs
-```http
-GET /list
-```
-**Resposta**: Array de URLs
-
----
-
-### Atualizar URL
-```http
-PUT /update/{id}
-Content-Type: application/json
-
-{
-  "url": "https://www.novo-exemplo.com"
-}
-```
-**Resposta**: `200 OK`
-
----
-
-### Deletar URL
-```http
-DELETE /delete/{id}
-```
-**Resposta**: `200 OK`
-
-## 🧪 Testes
-
-O projeto possui **50 testes unitários** com **100% de taxa de sucesso**.
-
-### Executar todos os testes
-
-```bash
-dotnet test --project ./Tests
-```
-
-### Executar testes com detalhes
-
-```bash
-dotnet test --project ./Tests --verbosity normal
-```
-
-### Executar testes de uma classe específica
-
-```bash
-dotnet test --project ./Tests --filter "FullyQualifiedName~Base62ConverterTests"
-```
-
-### Cobertura de Testes
-
-- ✅ **Base62ConverterTests** (15 testes) - Codificação/Decodificação Base62
-- ✅ **ServicesUrlTests** (15 testes) - Lógica de negócio e CRUD
-- ✅ **ControllerUrlTests** (20 testes) - Endpoints da API
 
 ## 📁 Estrutura do Projeto
 
 ```
-Tests/
-├── Base62ConverterTests.cs   # Testes do conversor
-├── ServicesUrlTests.cs       # Testes dos serviços
-└── ControllerUrlTests.cs     # Testes do controller
-src/
-├── controllers/
-│   └── ControllerUrl.cs          # Controller da API
-├── services/
-│   ├── ServicesUrl.cs            # Lógica de negócio
-│   ├── Base62Converter.cs        # Conversor Base62
-│   └── Interfaces/
-│       └── IServices.cs          # Interface genérica
-├── model/
-│   └── modelurl.cs               # Modelo de dados
-├── infra/
-│   └── DBurl.cs                  # Contexto do EF Core
-├── Migrations/                   # Migrações do banco
-├── Program.cs                    # Ponto de entrada
-├── appsettings.json             # Configurações
-├── docker-compose.yml           # Configuração Docker
-README.md                    # Este arquivo
+urlencurtador/
+├── .env                        # Variáveis de ambiente locais (ignorado no git)
+├── .env.example                # Modelo de variáveis de ambiente
+├── .gitignore                  # Regras de ignorados do Git
+├── Dockerfile                  # Build multi-stage para containerização da API
+├── docker-compose.yml          # Orquestração da API e banco de dados PostgreSQL
+├── LICENSE.md                  # Termos de licença MIT
+├── README.md                   # Documentação do projeto
+├── src/                        # Código-fonte da aplicação
+│   ├── urlencurtador.csproj    # Projeto ASP.NET Core Web API (.NET 9.0)
+│   ├── urlencurtador.sln       # Solution file do .NET
+│   ├── Program.cs              # Entrypoint, DI, OpenTelemetry e Migrations
+│   ├── appsettings.json        # Configurações de logging e connections
+│   ├── controllers/
+│   │   └── ControllerUrl.cs    # Controller REST com os endpoints HTTP
+│   ├── services/
+│   │   ├── ServicesUrl.cs      # Lógica de negócio e geração de códigos
+│   │   ├── Base62Converter.cs  # Algoritmo de conversão Base10 ↔ Base62
+│   │   └── Interfaces/
+│   │       └── IServices.cs    # Interface genérica de serviços
+│   ├── model/
+│   │   └── modelurl.cs         # Entidade de domínio (Id, Url, Code)
+│   ├── infra/
+│   │   └── DBurl.cs            # DbContext do Entity Framework Core
+│   └── Migrations/             # Migrações do PostgreSQL
+└── Tests/                      # Projeto de testes unitários (xUnit)
+    ├── urlencurtador.Tests.csproj
+    ├── ControllerUrlTests.cs   # Testes dos endpoints HTTP
+    ├── ServicesUrlTests.cs     # Testes da regra de negócio
+    └── Base62ConverterTests.cs # Testes do algoritmo Base62
 ```
 
-## 🔍 Como Funciona
+---
 
-### Codificação Base62
+## ⚙️ Configuração (.env)
 
-O projeto utiliza codificação Base62 para gerar hashes curtos e legíveis:
+A aplicação utiliza variáveis de ambiente para fácil implantação e desacoplamento de credenciais.
 
-- **Alfabeto**: `0-9A-Za-z` (62 caracteres)
-- **Offset**: IDs são somados com 1.000.000 antes da codificação
-- **Exemplo**: ID `1` → `1000001` → Hash `"4C93"`
+Crie um arquivo `.env` na raiz do projeto copiando o modelo `.env.example`:
 
-### Fluxo de Encurtamento
-
-1. Usuário envia URL longa via POST
-2. Sistema salva no banco e recebe um ID auto-incrementado
-3. ID é codificado em Base62 (com offset)
-4. Hash pode ser usado para acessar: `/{hash}`
-5. Sistema decodifica hash, busca URL e redireciona (301)
-
-### Exemplo de Conversão
-
-```
-ID no banco: 1
-ID + Offset: 1 + 1000000 = 1000001
-Base62:      "4C93"
-URL curta:   http://localhost:5018/4C93
+```bash
+cp .env.example .env
 ```
 
-## 🤝 Contribuindo
+### Exemplo de arquivo `.env`:
 
-Contribuições são bem-vindas! Sinta-se à vontade para:
+```env
+# Configurações da Aplicação
+APP_PORT=8080
+ASPNETCORE_ENVIRONMENT=Development
 
-1. Fazer fork do projeto
-2. Criar uma branch para sua feature (`git checkout -b feature/MinhaFeature`)
-3. Commit suas mudanças (`git commit -m 'Adiciona MinhaFeature'`)
-4. Push para a branch (`git push origin feature/MinhaFeature`)
-5. Abrir um Pull Request
+# Banco de Dados (PostgreSQL)
+DB_HOST=db
+DB_NAME=meubanco
+DB_USER=postgres
+DB_PASSWORD=senha123
 
-### Diretrizes
+# String de Conexão formatada para o Entity Framework Core
+ConnectionStrings__DefaultConnection="Host=db;Database=meubanco;Username=postgres;Password=senha123"
+```
 
-- Mantenha o código limpo e bem documentado
-- Adicione testes para novas funcionalidades
-- Siga os padrões de código existentes
-- Atualize a documentação quando necessário
+---
+
+## 🛠️ Como Executar
+
+### Opção 1: Via Docker Compose (Recomendado)
+
+Certifique-se de ter o [Docker](https://www.docker.com/) e [Docker Compose](https://docs.docker.com/compose/) instalados em sua máquina.
+
+1. **Inicie os serviços (API + PostgreSQL):**
+
+   ```bash
+   docker-compose up -d --build
+   ```
+
+2. **Verifique o status dos contêineres:**
+
+   ```bash
+   docker-compose ps
+   ```
+
+3. **Acesse a API:**
+   - A aplicação estará pronta e escutando em: `http://localhost:8080` (conforme definido na variável `APP_PORT`).
+
+4. **Para encerrar a execução:**
+
+   ```bash
+   docker-compose down
+   ```
+
+---
+
+### Opção 2: Execução Local (.NET CLI)
+
+#### Pré-requisitos:
+- [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
+- Instância ativa do **PostgreSQL 16**
+
+1. **Suba um contêiner PostgreSQL para testes locais (opcional):**
+
+   ```bash
+   docker run --name postgres-url -e POSTGRES_DB=meubanco -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=senha123 -p 5432:5432 -d postgres:16-alpine
+   ```
+
+2. **Ajuste a String de Conexão no `src/appsettings.json` ou exporte no ambiente:**
+
+   ```json
+   {
+     "ConnectionStrings": {
+       "DefaultConnection": "Host=localhost;Database=meubanco;Username=postgres;Password=senha123"
+     }
+   }
+   ```
+
+3. **Navegue até a pasta do projeto e execute:**
+
+   ```bash
+   cd src
+   dotnet run
+   ```
+
+> 💡 *Nota: As migrações do banco de dados são aplicadas automaticamente durante a inicialização da aplicação (`db.Database.Migrate()`).*
+
+---
+
+## 📡 Documentação da API (Endpoints)
+
+### 1. Criar URL Encurtada
+
+- **Endpoint**: `POST /`
+- **Headers**: `Content-Type: application/json`
+- **Body**:
+  ```json
+  {
+    "url": "https://www.google.com"
+  }
+  ```
+- **Resposta (`201 Created`)**:
+  ```json
+  {
+    "id": 1,
+    "url": "https://www.google.com",
+    "code": "4C93"
+  }
+  ```
+- **Exemplo cURL**:
+  ```bash
+  curl -X POST http://localhost:8080/ \
+    -H "Content-Type: application/json" \
+    -d '{"url": "https://www.google.com"}'
+  ```
+
+---
+
+### 2. Redirecionar para URL Original
+
+- **Endpoint**: `GET /{code}`
+- **Exemplo**: `GET /4C93`
+- **Resposta**:
+  - `301 Moved Permanently` (redireciona para o link original)
+  - `404 Not Found` (caso o código não seja localizado)
+- **Exemplo cURL**:
+  ```bash
+  curl -i http://localhost:8080/4C93
+  ```
+
+---
+
+### 3. Consultar URL Original por Código
+
+- **Endpoint**: `GET /get/{code}`
+- **Exemplo**: `GET /get/4C93`
+- **Resposta (`200 OK`)**:
+  ```json
+  "https://www.google.com"
+  ```
+- **Resposta (`404 Not Found`)**: Código não cadastrado.
+- **Exemplo cURL**:
+  ```bash
+  curl -X GET http://localhost:8080/get/4C93
+  ```
+
+---
+
+### 4. Listar Todas as URLs Cadastradas
+
+- **Endpoint**: `GET /list`
+- **Resposta (`200 OK`)**:
+  ```json
+  [
+    {
+      "id": 1,
+      "url": "https://www.google.com",
+      "code": "4C93"
+    }
+  ]
+  ```
+- **Exemplo cURL**:
+  ```bash
+  curl -X GET http://localhost:8080/list
+  ```
+
+---
+
+### 5. Atualizar URL Registrada
+
+- **Endpoint**: `PUT /update/{id}`
+- **Headers**: `Content-Type: application/json`
+- **Body**:
+  ```json
+  {
+    "url": "https://www.novo-exemplo.com"
+  }
+  ```
+- **Resposta (`200 OK`)**
+- **Exemplo cURL**:
+  ```bash
+  curl -X PUT http://localhost:8080/update/1 \
+    -H "Content-Type: application/json" \
+    -d '{"url": "https://www.novo-exemplo.com"}'
+  ```
+
+---
+
+### 6. Deletar URL por ID
+
+- **Endpoint**: `DELETE /delete/{id}`
+- **Exemplo**: `DELETE /delete/1`
+- **Resposta (`200 OK`)**
+- **Exemplo cURL**:
+  ```bash
+  curl -X DELETE http://localhost:8080/delete/1
+  ```
+
+---
+
+## 📊 Observabilidade
+
+A API conta com rastreamento distribuído pré-configurado via **OpenTelemetry**:
+
+- **Tracing de HTTP Requests**: Captura instrumentação de rotas e requisições no ASP.NET Core (`AddAspNetCoreInstrumentation()`).
+- **Exportador OTLP**: Envio via `AddOtlpExporter()`, pronto para integração com ferramentas como **Jaeger**, **Grafana Tempo**, **Datadog** ou **OpenTelemetry Collector**.
+
+---
+
+## 🧪 Testes Unitários
+
+O repositório possui cobertura de testes unitários desenvolvida com **xUnit**, **Moq**, **FluentAssertions** e **EF Core InMemory Database**.
+
+Para rodar a suíte de testes unitários:
+
+```bash
+dotnet test src/urlencurtador.sln
+```
+
+Ou apontando diretamente para o projeto de testes:
+
+```bash
+dotnet test Tests/urlencurtador.Tests.csproj
+```
+
+---
 
 ## 📄 Licença
 
-Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
+Este projeto está licenciado sob a licença **MIT** - consulte o arquivo [LICENSE.md](LICENSE.md) para mais detalhes.
+
+---
 
 ## 👤 Autor
 
-Desenvolvido com ❤️ por Deureck de Souza Passarela
+Desenvolvido por **Deureck de Souza Passarela**.
 
----
-
-## 📞 Suporte
-
-Se você tiver alguma dúvida ou problema, por favor abra uma [issue](https://github.com/deureck/urlencutador/issues).
-
----
-
-**⭐ Se este projeto foi útil para você, considere dar uma estrela!**
+[![GitHub](https://img.shields.io/badge/GitHub-deureck-181717?logo=github)](https://github.com/deureck)
