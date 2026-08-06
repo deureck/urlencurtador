@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using urlencurtador.services;
 using Xunit;
 
 namespace urlencutador.Tests;
@@ -16,7 +17,7 @@ public class ServicesUrlTests : IDisposable
             .Options;
 
         _context = new DBurl(options);
-        _service = new ServicesUrl(_context, new Base62Converter());
+        _service = new ServicesUrl(_context);
     }
 
     public void Dispose()
@@ -26,55 +27,43 @@ public class ServicesUrlTests : IDisposable
     }
 
     [Fact]
-    public void Create_Model_ShouldCreateModelUrlWithCorrectUrl()
+    public async Task Create_ShouldCreateModelUrlAndSaveToDatabase()
     {
         // Arrange
         string testUrl = "https://www.example.com";
 
         // Act
-        var result = _service.Create_Model(testUrl);
+        var result = await _service.Create(testUrl);
 
         // Assert
         result.Should().NotBeNull();
         result.Url.Should().Be(testUrl);
+        result.Code.Should().NotBeNullOrEmpty();
+
+        var inDb = await _context.Urls.FirstOrDefaultAsync(u => u.Code == result.Code);
+        inDb.Should().NotBeNull();
+        inDb!.Url.Should().Be(testUrl);
     }
 
     [Fact]
-    public async Task Add_ShouldAddUrlToDatabase()
+    public async Task Get_WithValidCode_ShouldReturnUrl()
     {
         // Arrange
-        var model = new modelurl("https://www.example.com");
+        var model = await _service.Create("https://www.example.com");
 
         // Act
-        await _service.Add(model);
-
-        // Assert
-        var urls = await _context.Urls.ToListAsync();
-        urls.Should().HaveCount(1);
-        urls[0].Url.Should().Be("https://www.example.com");
-    }
-
-    [Fact]
-    public async Task Get_WithValidId_ShouldReturnUrl()
-    {
-        // Arrange
-        var model = new modelurl("https://www.example.com");
-        _context.Urls.Add(model);
-        await _context.SaveChangesAsync();
-
-        // Act
-        var result = await _service.Get(model.Id);
+        var result = await _service.Get(model.Code);
 
         // Assert
         result.Should().NotBeNull();
-        result.Url.Should().Be("https://www.example.com");
+        result!.Url.Should().Be("https://www.example.com");
     }
 
     [Fact]
-    public async Task Get_WithInvalidId_ShouldReturnNull()
+    public async Task Get_WithInvalidCode_ShouldReturnNull()
     {
         // Act
-        var result = await _service.Get(999);
+        var result = await _service.Get("invalid_code_999");
 
         // Assert
         result.Should().BeNull();
@@ -84,10 +73,9 @@ public class ServicesUrlTests : IDisposable
     public async Task List_All_ShouldReturnAllUrls()
     {
         // Arrange
-        _context.Urls.Add(new modelurl("https://www.example1.com"));
-        _context.Urls.Add(new modelurl("https://www.example2.com"));
-        _context.Urls.Add(new modelurl("https://www.example3.com"));
-        await _context.SaveChangesAsync();
+        await _service.Create("https://www.example1.com");
+        await _service.Create("https://www.example2.com");
+        await _service.Create("https://www.example3.com");
 
         // Act
         var result = await _service.List_All();
@@ -97,75 +85,13 @@ public class ServicesUrlTests : IDisposable
     }
 
     [Fact]
-    public void GetEncode62_ShouldEncodeIdWithOffset()
-    {
-        // Arrange
-        long id = 1;
-        long expectedEncodedId = 1000001; // id + IDOFFSET (1000000)
-
-        // Act
-        var result = _service.GetEncode62(id);
-
-        // Assert
-        var decoded = Base62Converter.Decode(result);
-        decoded.Should().Be(expectedEncodedId);
-    }
-
-    [Fact]
-    public async Task SetEncode62_WithValidHash_ShouldReturnUrl()
-    {
-        // Arrange
-        var model = new modelurl("https://www.example.com");
-        _context.Urls.Add(model);
-        await _context.SaveChangesAsync();
-
-        var hash = _service.GetEncode62(model.Id);
-
-        // Act
-        var result = await _service.SetEncode62(hash);
-
-        // Assert
-        result.Should().Be("https://www.example.com");
-    }
-
-    [Fact]
-    public async Task SetEncode62_WithInvalidHash_ShouldReturnNull()
-    {
-        // Arrange
-        var invalidHash = Base62Converter.Encode(999999); // ID that doesn't exist
-
-        // Act
-        var result = await _service.SetEncode62(invalidHash);
-
-        // Assert
-        result.Should().BeNull();
-    }
-
-    [Fact]
-    public async Task SetEncode62_WithHashResultingInNegativeId_ShouldReturnNull()
-    {
-        // Arrange
-        var hashForSmallId = Base62Converter.Encode(100); // Less than IDOFFSET
-
-        // Act
-        var result = await _service.SetEncode62(hashForSmallId);
-
-        // Assert
-        result.Should().BeNull();
-    }
-
-    [Fact]
     public async Task Update_WithValidId_ShouldUpdateUrl()
     {
         // Arrange
-        var model = new modelurl("https://www.example.com");
-        _context.Urls.Add(model);
-        await _context.SaveChangesAsync();
-
-        var updatedModel = new modelurl("https://www.updated.com");
+        var model = await _service.Create("https://www.example.com");
 
         // Act
-        await _service.Update(model.Id, updatedModel);
+        await _service.Update(model.Id, "https://www.updated.com");
 
         // Assert
         var result = await _context.Urls.FindAsync(model.Id);
@@ -176,11 +102,8 @@ public class ServicesUrlTests : IDisposable
     [Fact]
     public async Task Update_WithInvalidId_ShouldNotThrowException()
     {
-        // Arrange
-        var updatedModel = new modelurl("https://www.updated.com");
-
         // Act
-        var act = async () => await _service.Update(999, updatedModel);
+        var act = async () => await _service.Update(999999, "https://www.updated.com");
 
         // Assert
         await act.Should().NotThrowAsync();
@@ -190,9 +113,7 @@ public class ServicesUrlTests : IDisposable
     public async Task Delete_WithValidId_ShouldRemoveUrl()
     {
         // Arrange
-        var model = new modelurl("https://www.example.com");
-        _context.Urls.Add(model);
-        await _context.SaveChangesAsync();
+        var model = await _service.Create("https://www.example.com");
 
         // Act
         await _service.Delete(model.Id);
@@ -206,7 +127,7 @@ public class ServicesUrlTests : IDisposable
     public async Task Delete_WithInvalidId_ShouldNotThrowException()
     {
         // Act
-        var act = async () => await _service.Delete(999);
+        var act = async () => await _service.Delete(999999);
 
         // Assert
         await act.Should().NotThrowAsync();

@@ -1,4 +1,5 @@
 using FluentAssertions;
+using urlencurtador.services;
 using Xunit;
 
 namespace urlencutador.Tests;

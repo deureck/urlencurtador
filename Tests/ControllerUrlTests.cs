@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using urlencurtador.services;
 using Xunit;
 
 namespace urlencutador.Tests;
@@ -13,13 +14,12 @@ public class ControllerUrlTests : IDisposable
 
     public ControllerUrlTests()
     {
-        // Create an in-memory database for testing
         var options = new DbContextOptionsBuilder<DBurl>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
 
         _context = new DBurl(options);
-        _service = new ServicesUrl(_context, new Base62Converter());
+        _service = new ServicesUrl(_context);
         _controller = new ControllerUrl(_service);
     }
 
@@ -30,7 +30,7 @@ public class ControllerUrlTests : IDisposable
     }
 
     [Fact]
-    public async Task CreateUrl_ShouldReturnCreatedResult()
+    public async Task CreateUrl_ShouldReturnCreatedResultWithModelUrl()
     {
         // Arrange
         var input = new CreateInput("https://www.example.com");
@@ -40,75 +40,50 @@ public class ControllerUrlTests : IDisposable
 
         // Assert
         result.Should().BeOfType<CreatedResult>();
-        
-        // Verify the URL was actually added to the database
+        var createdResult = result as CreatedResult;
+        createdResult!.Value.Should().BeOfType<modelurl>();
+        var model = createdResult.Value as modelurl;
+        model!.Url.Should().Be("https://www.example.com");
+        model.Code.Should().NotBeNullOrEmpty();
+
         var urls = await _context.Urls.ToListAsync();
         urls.Should().HaveCount(1);
         urls[0].Url.Should().Be("https://www.example.com");
     }
 
     [Fact]
-    public async Task GetUrlById_WithValidId_ShouldReturnOkResult()
+    public async Task GetUrlById_WithValidCode_ShouldReturnOkResultWithUrlString()
     {
         // Arrange
-        var model = new modelurl("https://www.example.com");
-        _context.Urls.Add(model);
-        await _context.SaveChangesAsync();
+        var model = await _service.Create("https://www.example.com");
 
         // Act
-        var result = await _controller.GetUrlById(model.Id);
+        var result = await _controller.GetUrlById(model.Code);
 
         // Assert
         result.Should().BeOfType<OkObjectResult>();
         var okResult = result as OkObjectResult;
-        okResult!.Value.Should().BeEquivalentTo(model);
+        okResult!.Value.Should().Be("https://www.example.com");
     }
 
     [Fact]
-    public async Task GetUrlById_WithInvalidId_ShouldReturnNotFound()
+    public async Task GetUrlById_WithInvalidCode_ShouldReturnNotFound()
     {
         // Act
-        var result = await _controller.GetUrlById(999);
+        var result = await _controller.GetUrlById("non_existent_code");
 
         // Assert
         result.Should().BeOfType<NotFoundResult>();
     }
 
     [Fact]
-    public async Task CreateHashById_ShouldReturnOkResultWithHash()
+    public async Task RedirectToUrl_WithValidCode_ShouldReturnRedirectPermanent()
     {
         // Arrange
-        long id = 1;
+        var model = await _service.Create("https://www.example.com");
 
         // Act
-        var result = await _controller.CreateHashById(id);
-
-        // Assert
-        result.Should().BeOfType<OkObjectResult>();
-        var okResult = result as OkObjectResult;
-        
-        // Verify the hash is not null or empty
-        var hashObject = okResult!.Value;
-        hashObject.Should().NotBeNull();
-        
-        // Use reflection to get the hash property
-        var hashProperty = hashObject!.GetType().GetProperty("hash");
-        var hashValue = hashProperty!.GetValue(hashObject) as string;
-        hashValue.Should().NotBeNullOrEmpty();
-    }
-
-    [Fact]
-    public async Task RedirectToUrl_WithValidHash_ShouldReturnRedirectPermanent()
-    {
-        // Arrange
-        var model = new modelurl("https://www.example.com");
-        _context.Urls.Add(model);
-        await _context.SaveChangesAsync();
-
-        var hash = _service.GetEncode62(model.Id);
-
-        // Act
-        var result = await _controller.RedirectToUrl(hash);
+        var result = await _controller.RedirectToUrl(model.Code);
 
         // Assert
         result.Should().BeOfType<RedirectResult>();
@@ -118,13 +93,10 @@ public class ControllerUrlTests : IDisposable
     }
 
     [Fact]
-    public async Task RedirectToUrl_WithInvalidHash_ShouldReturnNotFound()
+    public async Task RedirectToUrl_WithInvalidCode_ShouldReturnNotFound()
     {
-        // Arrange
-        string invalidHash = Base62Converter.Encode(100); // Hash that results in invalid ID
-
         // Act
-        var result = await _controller.RedirectToUrl(invalidHash);
+        var result = await _controller.RedirectToUrl("non_existent_code");
 
         // Assert
         result.Should().BeOfType<NotFoundResult>();
@@ -134,10 +106,9 @@ public class ControllerUrlTests : IDisposable
     public async Task GetAllUrls_ShouldReturnOkResultWithUrlList()
     {
         // Arrange
-        _context.Urls.Add(new modelurl("https://www.example1.com"));
-        _context.Urls.Add(new modelurl("https://www.example2.com"));
-        _context.Urls.Add(new modelurl("https://www.example3.com"));
-        await _context.SaveChangesAsync();
+        await _service.Create("https://www.example1.com");
+        await _service.Create("https://www.example2.com");
+        await _service.Create("https://www.example3.com");
 
         // Act
         var result = await _controller.GetAllUrls();
@@ -163,13 +134,10 @@ public class ControllerUrlTests : IDisposable
     }
 
     [Fact]
-    public async Task UpdateUrl_ShouldReturnOkResult()
+    public async Task UpdateUrl_WithValidId_ShouldReturnOkResultAndEditUrl()
     {
         // Arrange
-        var model = new modelurl("https://www.example.com");
-        _context.Urls.Add(model);
-        await _context.SaveChangesAsync();
-
+        var model = await _service.Create("https://www.example.com");
         var input = new CreateInput("https://www.updated.com");
 
         // Act
@@ -177,50 +145,44 @@ public class ControllerUrlTests : IDisposable
 
         // Assert
         result.Should().BeOfType<OkResult>();
-        
-        // Verify the URL was actually updated
         var updatedModel = await _context.Urls.FindAsync(model.Id);
         updatedModel.Should().NotBeNull();
         updatedModel!.Url.Should().Be("https://www.updated.com");
     }
 
     [Fact]
-    public async Task UpdateUrl_WithInvalidId_ShouldReturnOkButNotUpdate()
+    public async Task UpdateUrl_WithInvalidId_ShouldReturnOkResult()
     {
         // Arrange
         var input = new CreateInput("https://www.updated.com");
 
         // Act
-        var result = await _controller.UpdateUrl(999, input);
+        var result = await _controller.UpdateUrl(999999, input);
 
         // Assert
         result.Should().BeOfType<OkResult>();
     }
 
     [Fact]
-    public async Task DeleteUrlById_ShouldReturnOkResult()
+    public async Task DeleteUrlById_WithValidId_ShouldReturnOkResultAndRemoveUrl()
     {
         // Arrange
-        var model = new modelurl("https://www.example.com");
-        _context.Urls.Add(model);
-        await _context.SaveChangesAsync();
+        var model = await _service.Create("https://www.example.com");
 
         // Act
         var result = await _controller.DeleteUrlById(model.Id);
 
         // Assert
         result.Should().BeOfType<OkResult>();
-        
-        // Verify the URL was actually deleted
         var deletedModel = await _context.Urls.FindAsync(model.Id);
         deletedModel.Should().BeNull();
     }
 
     [Fact]
-    public async Task DeleteUrlById_WithInvalidId_ShouldReturnOkWithoutError()
+    public async Task DeleteUrlById_WithInvalidId_ShouldReturnOkResult()
     {
         // Act
-        var result = await _controller.DeleteUrlById(999);
+        var result = await _controller.DeleteUrlById(999999);
 
         // Assert
         result.Should().BeOfType<OkResult>();
